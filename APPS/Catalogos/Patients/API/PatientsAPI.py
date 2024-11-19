@@ -215,6 +215,45 @@ class PatientsViewSet(ModelViewSet):
         )
         return Response(status=status.HTTP_200_OK, data=data.toResponse())
 
+    @action(methods=['get'], detail=False)
+    def Report_Patients_By_BirthDate_Range(self, request):
+        fecha_inicio = request.query_params.get('FechaInicio')
+        fecha_fin = request.query_params.get('FechaFin')
+
+        if not (fecha_inicio and fecha_fin):
+            return Response({
+                "Success": False,
+                "Status": status.HTTP_400_BAD_REQUEST,
+                "Message": "LOS CAMPOS 'FechaInicio' y 'FechaFin' SON OBLIGATORIOS PARA LA BUSQUEDA.",
+                "Record": None
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            pacientes = Patients.objects.filter(Birthdate__range=(fecha_inicio, fecha_fin))
+        except ValueError:
+            return Response({
+                "Success": False,
+                "Status": status.HTTP_400_BAD_REQUEST,
+                "Message": "FORMATO DE FECHA INVALIDO. UTILICE: 'YYYY-MM-DD'.",
+                "Record": None
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        if pacientes.exists():
+            serializer = PatientsSerializer(pacientes, many=True)
+            return Response({
+                "Success": True,
+                "Status": status.HTTP_200_OK,
+                "Message": "PACIENTES ENCONTRADOS DENTRO DEL RANGO ESPECIFICADO.",
+                "Record": serializer.data
+            }, status=status.HTTP_200_OK)
+        else:
+            return Response({
+                "Success": False,
+                "Status": status.HTTP_404_NOT_FOUND,
+                "Message": "No se encontraron pacientes nacidos en el rango de fechas especificado.",
+                "Record": None
+            }, status=status.HTTP_404_NOT_FOUND)
+
 
 
 
